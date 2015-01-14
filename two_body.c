@@ -6,18 +6,24 @@
 #include <stdio.h>
 #include <math.h>
 
-// Updates the vector u -> up at time t
+/* Kepler is the position & velocity update. 
+   Note that u[0] & u[2] are the positions 
+             u[1] & u[3]  are the velocities
+*/
 void kepler(double t, double *u, double *up){
     double r3 = sqrt(pow(u[0]*u[0] + u[2]*u[2], 3.0));
     up[0] = u[1]; up[1] = -u[0]/r3;
     up[2] = u[3]; up[3] = -u[2]/r3;
 }
 
-// the Runge Kutta solver
-int rkStep(int neqn, double *y, double *yp, double t, double dt, double relerr, double abserr){
+/* Runge Kutta integrator
+   This function does the core work in solveing the problem. It returns
+   an int in case you want to do some error checking here
+*/
+int rkStep(int neqn, double *y, double *yp, double t, double dt){
     double k1[neqn], k2[neqn], k3[neqn], k4[neqn], yt[neqn];
     int i;
-  // first step k1 = dt*
+  // first step
     kepler(t, y, k1);
     
     for(i=0;i<neqn;i++){
@@ -44,17 +50,22 @@ int rkStep(int neqn, double *y, double *yp, double t, double dt, double relerr, 
     return 0;
 }
 
-// this function calls the Runge Kutta solver
+/* Runge Kutta caller
+   tend is an arbitrary end point, choose what you want really
+*/
 void rk4Solve(int neqn, int nsteps, double *y){
-    double abserr=1e-10, relerr=1e-10, tbeg=0.0, tend=7.79;
-     y[0] = 1.0; y[1] = 0.0;
-     y[2] = 0.0; y[3] = 1.0;
+    double beg=0.0, tend=7.79;
+    
+  // initial values of positions and velocities.
+  // we chose it starting at x and moving purely in the y dir
+     y[0] = 1.0; y[1] = 0.0;  // x, vx
+     y[2] = 0.0; y[3] = 1.0;  // y, vy
      
      double dt, t=0.0, yp[4];
    // set time stepper
      dt = (tend - tbeg)/(double) nsteps;
      
-     kepler(t, y, yp); // yp is y'
+     kepler(t, y, yp); // initializes yp is y'
      
      int istep, i;
      FILE *fp;
@@ -65,12 +76,13 @@ void rk4Solve(int neqn, int nsteps, double *y){
        
        // print results to file
          fprintf(fp,"%e    %e\n",yp[0],yp[2]);
+       // update y from yp found in rkStep
          for(i=0; i<neqn; i++) y[i] = yp[i];
      }
      fclose(fp);
  }
      
-
+// obvious ;)
 int main(){
     int neqn=4,numstep=1000;
     double x[neqn];
